@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>道路交通情報 - リアルタイム渋滞・規制情報</title>
+    <meta name="description" content="日本全国の高速道路と周辺一般道路のリアルタイム交通情報を表示。渋滞、事故、規制情報を地図で確認できます。">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <link rel="stylesheet" href="index.css">
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg>
+                <h1>道路交通情報</h1>
+            </div>
+            <div class="header-actions">
+                <button id="locationBtn" class="btn btn-secondary">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9C9.5 7.62 10.62 6.5 12 6.5C13.38 6.5 14.5 7.62 14.5 9C14.5 10.38 13.38 11.5 12 11.5Z"
+                            fill="currentColor" />
+                    </svg>
+                    現在地を取得
+                </button>
+                <button id="refreshBtn" class="btn btn-primary">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M21.5 2V9H14.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                        <path d="M2.5 22V15H9.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                        <path
+                            d="M19.13 9C18.5 6.84 17.15 4.97 15.32 3.73C13.49 2.49 11.31 1.96 9.16 2.23C7.01 2.5 5.03 3.55 3.61 5.19C2.19 6.83 1.43 8.94 1.46 11.11M4.87 15C5.5 17.16 6.85 19.03 8.68 20.27C10.51 21.51 12.69 22.04 14.84 21.77C16.99 21.5 18.97 20.45 20.39 18.81C21.81 17.17 22.57 15.06 22.54 12.89"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    更新
+                </button>
+                <div class="fullscreen-controls">
+                    <button id="fullscreenMapBtn" class="btn btn-secondary" title="地図を全画面表示">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M3 3H10V5H6.5L10.5 9L9 10.5L5 6.5V10H3V3ZM14 3H21V10H19V6.5L15 10.5L13.5 9L17.5 5H14V3ZM3 14H5V17.5L9 13.5L10.5 15L6.5 19H10V21H3V14ZM19 17.5V14H21V21H14V19H17.5L13.5 15L15 13.5L19 17.5Z"
+                                fill="currentColor" />
+                        </svg>
+                        地図
+                    </button>
+                    <button id="fullscreenInfoBtn" class="btn btn-secondary" title="情報を全画面表示">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 3H21V7H3V3ZM3 9H21V13H3V9ZM3 15H21V19H3V15Z" fill="currentColor" />
+                        </svg>
+                        情報
+                    </button>
+                    <button id="fullscreenAllBtn" class="btn btn-secondary" title="全画面表示">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M7 14H5V19H10V17H7V14ZM5 10H7V7H10V5H5V10ZM17 17H14V19H19V14H17V17ZM14 5V7H17V10H19V5H14Z"
+                                fill="currentColor" />
+                        </svg>
+                        全画面
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>交通情報</h2>
+                <div class="last-update">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
+                        <path d="M12 6V12L16 14" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                    </svg>
+                    <span id="lastUpdateTime">--:--</span>
+                </div>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="filter-tabs">
+                <button class="filter-tab active" data-filter="all">
+                    <span class="tab-icon">🚗</span>
+                    すべて
+                </button>
+                <button class="filter-tab" data-filter="highway">
+                    <span class="tab-icon">🛣️</span>
+                    高速道路
+                </button>
+                <button class="filter-tab" data-filter="local">
+                    <span class="tab-icon">🏙️</span>
+                    一般道路
+                </button>
+            </div>
+
+            <!-- Traffic Info List -->
+            <div class="traffic-list" id="trafficList">
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <p>交通情報を読み込み中...</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Map Container -->
+        <div class="map-container">
+            <div id="map"></div>
+
+            <!-- Map Controls -->
+            <div class="map-controls">
+                <div class="legend">
+                    <h3>凡例</h3>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: #ef4444;"></span>
+                        <span>渋滞</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: #f59e0b;"></span>
+                        <span>混雑</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: #3b82f6;"></span>
+                        <span>規制</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-color" style="background: #8b5cf6;"></span>
+                        <span>事故</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Status Bar -->
+            <div class="status-bar">
+                <div class="status-item">
+                    <span class="status-label">渋滞</span>
+                    <span class="status-value" id="congestionCount">0</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">規制</span>
+                    <span class="status-value" id="restrictionCount">0</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">事故</span>
+                    <span class="status-value" id="accidentCount">0</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
